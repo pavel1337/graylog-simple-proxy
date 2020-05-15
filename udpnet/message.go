@@ -1,8 +1,6 @@
 package udpnet
 
 import (
-	"fmt"
-	"log"
 	"time"
 )
 
@@ -31,7 +29,7 @@ func (c *chunkMessage) check() {
 		c.listener.lock.Lock()
 
 		if c.valid() {
-			log.Println(fmt.Sprintf("[%X] message %X complete", c.sid, c.id[:]))
+			// log.Println(fmt.Sprintf("[%X] message %X complete", c.sid, c.id[:]))
 			c.listener.parse(c.merge(), c.sid)
 			delete(c.listener.queue, c.id)
 			c.listener.lock.Unlock()
@@ -40,7 +38,7 @@ func (c *chunkMessage) check() {
 		// expires, all message should arrive within 5 seconds
 		// http://docs.graylog.org/en/2.3/pages/gelf.html#chunking
 		if c.end.Before(now) {
-			log.Println(fmt.Sprintf("[%X] timeout, discarding message %X", c.sid, c.id[:]))
+			// log.Println(fmt.Sprintf("[%X] timeout, discarding message %X", c.sid, c.id[:]))
 			c.listener.lock.Unlock()
 			return
 		}

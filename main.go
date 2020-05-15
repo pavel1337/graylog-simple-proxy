@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -59,17 +58,9 @@ func main() {
 		case error:
 			log.Println(val)
 		case []byte:
-			id, message := val[:8], val[8:]
+			_, message := val[:8], val[8:] // id omitted
 			message = append(message, byte(0))
 			ch <- message
-			fmt.Printf("\n#### %X ####\n\n##########################\n\n", id)
-			// if conn != nil {
-			// 	if c.getBoolVar("new-line") {
-			// 		conn.Push(append(message, '\n'), id)
-			// 	} else {
-			// 		conn.Push(append(message, byte(0)), id)
-			// 	}
-			// }
 		}
 	}
 }

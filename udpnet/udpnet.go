@@ -6,9 +6,7 @@ import (
 	"compress/zlib"
 	"crypto/sha1"
 	"errors"
-	"fmt"
 	"io"
-	"log"
 	"net"
 	"regexp"
 	"sync"
@@ -63,13 +61,13 @@ func (u *Listener) Listen() {
 	}
 	for {
 		buf, id := make([]byte, 8192), make([]byte, 8, 8)
-		n, add, err := u.conn.ReadFrom(buf)
+		n, _, err := u.conn.ReadFrom(buf) // address string is ignored here
 
 		if err != nil {
 			u.Done <- err
 		} else if n < len(buf) {
 			u.createId(buf, id)
-			log.Println(fmt.Sprintf("[%X] received %d bytes from '%s'", id, n, add.String()))
+			// log.Println(fmt.Sprintf("[%X] received %d bytes from '%s'", id, n, add.String()))
 		}
 		go u.parse(buf[:n], id)
 	}
@@ -89,10 +87,10 @@ func (u *Listener) parse(buf []byte, id []byte) {
 		// u.parseChunck(buf, id)
 	case buf[0] == 0x1f && buf[1] == 0x8b: // gzip
 		if ret, err := u.unmarshalGzip(buf); err != nil {
-			log.Println(fmt.Sprintf("[%X] failed to decompress gzip stream", id))
+			// log.Println(fmt.Sprintf("[%X] failed to decompress gzip stream", id))
 			u.Done <- err
 		} else {
-			log.Println(fmt.Sprintf("[%X] decompressed gzip srream", id))
+			// log.Println(fmt.Sprintf("[%X] decompressed gzip srream", id))
 			u.Done <- append(id[:], ret...)
 		}
 	case buf[0] == 0x78 && buf[1] == 0xe5, // zlib
@@ -100,14 +98,14 @@ func (u *Listener) parse(buf []byte, id []byte) {
 		buf[0] == 0x78 && buf[1] == 0xda:
 
 		if ret, err := u.unmarshalZlib(buf); err != nil {
-			log.Println(fmt.Sprintf("[%X] failed to decompress zlib stream", id))
+			// log.Println(fmt.Sprintf("[%X] failed to decompress zlib stream", id))
 			u.Done <- err
 		} else {
-			log.Println(fmt.Sprintf("[%X] decompressed zlib stream", id))
+			// log.Println(fmt.Sprintf("[%X] decompressed zlib stream", id))
 			u.Done <- append(id[:], ret...)
 		}
 	default:
-		log.Println(fmt.Sprintf("[%X] uncompressed stream", id))
+		// log.Println(fmt.Sprintf("[%X] uncompressed stream", id))
 		u.Done <- append(id[:], buf...)
 	}
 }
@@ -117,7 +115,7 @@ func (u *Listener) parseChunck() {
 		b := chunk.b
 		sid := chunk.sid
 		id, index, count := [8]byte{b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9]}, b[10], b[11]
-		log.Println(fmt.Sprintf("[%X] chunck %X %d/%d", sid, id, index+1, count))
+		// log.Println(fmt.Sprintf("[%X] chunck %X %d/%d", sid, id, index+1, count))
 		u.lock.Lock()
 		if _, ok := u.queue[id]; !ok {
 			u.queue[id] = NewChunkMessage(make([][]byte, count), u, id, sid)
