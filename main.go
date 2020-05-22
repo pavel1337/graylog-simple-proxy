@@ -1,16 +1,9 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"flag"
-	"io/ioutil"
 	"log"
-	"net"
 	"strings"
-	"sync"
-
-	"github.com/pavel1337/graylog-simple-proxy/udpnet"
 )
 
 func main() {
@@ -22,30 +15,24 @@ func main() {
 	crt := flag.String("crt", "", "Client certificate path")
 	key := flag.String("key", "", "Client key path")
 	flag.Parse()
-	certPool, pair, err := createCertPool(*ca, *crt, *key)
-	if err != nil {
-		log.Fatalln(err)
-	}
 
-	c := tls.Config{
-		RootCAs:      certPool,
-		Certificates: []tls.Certificate{*pair},
+	// Initialize and start sender
+	sender := Sender{
+		ca:         *ca,
+		crt:        *crt,
+		key:        *key,
+		serverName: *serverName,
+		insecure:   *insecure,
+		remoteAddr: *remote,
 	}
-	if *insecure {
-		c.InsecureSkipVerify = true
-	}
-	if *serverName != "" {
-		c.ServerName = *serverName
-	}
-
-	ch := make(chan []byte, 100)
-	go sender(ch, *remote, c)
+	sendCh := make(chan []byte)
+	go sender.Start(sendCh)
 
 	if strings.Index(*local, "://") == -1 {
 		*local = "udp://" + *local
 	}
 
-	listener, err := udpnet.NewListener(*local)
+	listener, err := NewListener(*local)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -53,58 +40,14 @@ func main() {
 
 	for ret := range listener.Done {
 		switch val := ret.(type) {
-		case *udpnet.FatalError:
+		case *FatalError:
 			log.Fatalln(val)
 		case error:
 			log.Println(val)
 		case []byte:
 			_, message := val[:8], val[8:] // id omitted
 			message = append(message, byte(0))
-			ch <- message
+			sendCh <- message
 		}
 	}
-}
-
-func sender(ch chan []byte, addr string, c tls.Config) {
-	wg := sync.WaitGroup{}
-	for i := 0; i < 5; i++ {
-		wg.Add(1)
-		go func() {
-			for {
-				tlsconn, err := newTlsConnection(addr, &c)
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				for m := range ch {
-					tlsconn.Write(m)
-				}
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-}
-
-func newTlsConnection(addr string, config *tls.Config) (*tls.Conn, error) {
-	c, err := tls.DialWithDialer(&net.Dialer{}, "tcp", addr, config)
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
-
-func createCertPool(ca, crt, pem string) (*x509.CertPool, *tls.Certificate, error) {
-	buf, err := ioutil.ReadFile(ca)
-	if err != nil {
-		return nil, nil, err
-	}
-	certPool := x509.NewCertPool()
-	certPool.AppendCertsFromPEM(buf)
-	pair, err := tls.LoadX509KeyPair(crt, pem)
-	if err != nil {
-		return nil, nil, err
-	}
-	return certPool, &pair, err
-
 }
