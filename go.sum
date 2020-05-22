@@ -1,7 +1,2 @@
-github.com/fatih/pool v1.0.0 h1:etlANzyBmYJsWD2bVOheUhqcK6KDHZMjnmUUgtYtez8=
 github.com/fatih/pool v3.0.0+incompatible h1:3xXzI/t5o6aEU/R+xe7ed44CTw41lV3oB0gB5pNXS5U=
 github.com/fatih/pool v3.0.0+incompatible/go.mod h1:v+kkrv3f2oJ1P9NHaKArMYdTVtNCwfR0DlXwnhA2L4k=
-github.com/pavel1337/graylog-simple-proxy v0.0.0-20200515091104-b91632df817f h1:S7fsUo0nlDc1usHl4sXWT11vA2BVnv6pQaq7hTzZsfM=
-github.com/pavel1337/graylog-simple-proxy v0.0.0-20200515091104-b91632df817f/go.mod h1:s4PpHTF3oHdz6/bi/gGcrUKtO6CKzh7SR2eWR5b5IHg=
-github.com/robertkowalski/graylog-golang v0.0.0-20151121031040-e5295cfa2827 h1:D2Xs0bSuqpKnUOOlK4yu6lloeOs4+oD+pjbOfsxgWu0=
-github.com/robertkowalski/graylog-golang v0.0.0-20151121031040-e5295cfa2827/go.mod h1:jONcYFk83vUF1lv0aERAwaFtDM9wUW4BMGmlnpLJyZY=
