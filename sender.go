@@ -40,9 +40,10 @@ func (s *Sender) Start(sendCh chan []byte, workers int) {
 	}
 
 	s.hc = &http.Client{
-		Timeout: time.Second,
+		Timeout: 5 * time.Second,
 		Transport: &http.Transport{
-			TLSClientConfig: c,
+			TLSClientConfig:     c,
+			MaxIdleConnsPerHost: 100,
 		},
 	}
 
@@ -63,6 +64,10 @@ func (s *Sender) send(sendCh chan []byte) {
 				log.Println(err)
 				time.Sleep(time.Second)
 				continue
+			}
+			if resp.StatusCode == 413 {
+				log.Printf("discarding, status: %v", resp.Status)
+				break
 			}
 			if resp.StatusCode != 202 {
 				log.Printf("message is not processed, status: %v", resp.Status)
