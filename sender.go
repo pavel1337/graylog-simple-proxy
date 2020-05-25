@@ -40,6 +40,7 @@ func (s *Sender) Start(sendCh chan []byte, workers int) {
 	}
 
 	s.hc = &http.Client{
+		Timeout: time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: c,
 		},
@@ -60,6 +61,11 @@ func (s *Sender) send(sendCh chan []byte) {
 			resp, err := s.hc.Post(s.remoteAddr, "", reader)
 			if err != nil {
 				log.Println(err)
+				time.Sleep(time.Second)
+				continue
+			}
+			if resp.StatusCode != 202 {
+				log.Printf("message is not processed, status: %v", resp.Status)
 				time.Sleep(time.Second)
 				continue
 			}
