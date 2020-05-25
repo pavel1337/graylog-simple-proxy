@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"log"
 	"strings"
@@ -17,6 +18,14 @@ func main() {
 	workers := flag.Int("workers", 5, "Sender workers")
 	flag.Parse()
 
+	if *workers > 100 {
+		log.Fatalln(errors.New("No more than 100 workers are allowed"))
+	}
+
+	if *workers < 1 {
+		log.Fatalln(errors.New("No less than 1 worker is allowed"))
+	}
+
 	// Initialize and start sender
 	sender := Sender{
 		ca:         *ca,
@@ -25,6 +34,7 @@ func main() {
 		serverName: *serverName,
 		insecure:   *insecure,
 		remoteAddr: *remote,
+		workers:    *workers,
 	}
 	sendCh := make(chan []byte, 1000)
 	go sender.Start(sendCh, *workers)
