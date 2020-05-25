@@ -18,6 +18,7 @@ type Sender struct {
 	serverName string
 	insecure   bool
 	remoteAddr string
+	workers    int
 
 	hc *http.Client
 }
@@ -43,7 +44,7 @@ func (s *Sender) Start(sendCh chan []byte, workers int) {
 		Timeout: 5 * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig:     c,
-			MaxIdleConnsPerHost: 100,
+			MaxIdleConnsPerHost: s.workers,
 		},
 	}
 
