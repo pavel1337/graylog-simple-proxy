@@ -1,19 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
-	"io"
 	"io/ioutil"
 	"log"
-	"net"
-	"syscall"
-
-	"github.com/fatih/pool"
+	"net/http"
+	"sync"
+	"time"
 )
-
-var errUnexpectedRead = errors.New("unexpected read from socket")
 
 type Sender struct {
 	ca         string
@@ -22,11 +18,11 @@ type Sender struct {
 	serverName string
 	insecure   bool
 	remoteAddr string
-	tlsConfig  *tls.Config
-	connPool   pool.Pool
+
+	hc *http.Client
 }
 
-func (s *Sender) Start(sendCh chan []byte) {
+func (s *Sender) Start(sendCh chan []byte, workers int) {
 	certPool, pair, err := createCertPool(s.ca, s.crt, s.key)
 	if err != nil {
 		log.Fatalln(err)
@@ -42,46 +38,34 @@ func (s *Sender) Start(sendCh chan []byte) {
 	if s.serverName != "" {
 		c.ServerName = s.serverName
 	}
-	s.tlsConfig = c
-	err = s.newPool()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	s.send(sendCh)
-}
 
-func (s *Sender) newPool() error {
-	factory := func() (net.Conn, error) {
-		c, err := tls.DialWithDialer(&net.Dialer{}, "tcp", s.remoteAddr, s.tlsConfig)
-		if err != nil {
-			return nil, err
-		}
-		return c, nil
+	s.hc = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: c,
+		},
 	}
-	p, err := pool.NewChannelPool(5, 30, factory)
-	s.connPool = p
-	return err
+
+	wg := sync.WaitGroup{}
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go s.send(sendCh)
+	}
+	wg.Wait()
 }
 
 func (s *Sender) send(sendCh chan []byte) {
 	for m := range sendCh {
-		var conn net.Conn
-		var err error
 		for {
-			conn, err = s.connPool.Get()
+			reader := bytes.NewReader(m)
+			resp, err := s.hc.Post(s.remoteAddr, "", reader)
 			if err != nil {
 				log.Println(err)
+				time.Sleep(time.Second)
 				continue
 			}
-			err = connCheck(conn)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
+			resp.Body.Close()
 			break
 		}
-		conn.Write(m)
-		conn.Close()
 	}
 }
 
@@ -98,38 +82,4 @@ func createCertPool(ca, crt, pem string) (*x509.CertPool, *tls.Certificate, erro
 	}
 	return certPool, &pair, err
 
-}
-
-func connCheck(conn net.Conn) error {
-	var sysErr error
-
-	sysConn, ok := conn.(syscall.Conn)
-	if !ok {
-		return nil
-	}
-	rawConn, err := sysConn.SyscallConn()
-	if err != nil {
-		return err
-	}
-
-	err = rawConn.Read(func(fd uintptr) bool {
-		var buf [1]byte
-		n, err := syscall.Read(int(fd), buf[:])
-		switch {
-		case n == 0 && err == nil:
-			sysErr = io.EOF
-		case n > 0:
-			sysErr = errUnexpectedRead
-		case err == syscall.EAGAIN || err == syscall.EWOULDBLOCK:
-			sysErr = nil
-		default:
-			sysErr = err
-		}
-		return true
-	})
-	if err != nil {
-		return err
-	}
-
-	return sysErr
 }

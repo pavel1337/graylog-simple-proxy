@@ -14,6 +14,7 @@ func main() {
 	ca := flag.String("ca", "", "Certificate Authority path")
 	crt := flag.String("crt", "", "Client certificate path")
 	key := flag.String("key", "", "Client key path")
+	workers := flag.Int("workers", 5, "Sender workers")
 	flag.Parse()
 
 	// Initialize and start sender
@@ -25,8 +26,8 @@ func main() {
 		insecure:   *insecure,
 		remoteAddr: *remote,
 	}
-	sendCh := make(chan []byte)
-	go sender.Start(sendCh)
+	sendCh := make(chan []byte, 1000)
+	go sender.Start(sendCh, *workers)
 
 	if strings.Index(*local, "://") == -1 {
 		*local = "udp://" + *local

@@ -102,7 +102,7 @@ func (u *Listener) Listen() {
 		select {
 		case u.buffChan <- buff{buf: buf[:n], id: id}: // Put 2 in the channel unless it is full
 		default:
-			log.Println("queue is full, discarding log")
+			log.Println("queue is full, discarding log message")
 			buf = nil
 			id = nil
 		}
