@@ -90,7 +90,7 @@ func (u *Listener) Listen() {
 		return
 	}
 	for {
-		buf, id := make([]byte, 8192), make([]byte, 8, 8)
+		buf, id := make([]byte, 8192), make([]byte, 8)
 		n, _, err := u.conn.ReadFrom(buf) // address string is ignored here
 
 		if err != nil {

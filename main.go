@@ -12,18 +12,18 @@ func main() {
 	remote := flag.String("r", "graylog.example.com", "Remote graylog GELF input")
 	insecure := flag.Bool("insecure", false, "Skip Certificate Verification")
 	serverName := flag.String("server-name", "", "Server Name declared in certificate to verificate")
-	ca := flag.String("ca", "", "Certificate Authority path")
-	crt := flag.String("crt", "", "Client certificate path")
-	key := flag.String("key", "", "Client key path")
+	ca := flag.String("ca", "ca.crt", "Certificate Authority path")
+	crt := flag.String("crt", "client.crt", "Client certificate path")
+	key := flag.String("key", "client.key", "Client key path")
 	workers := flag.Int("workers", 5, "Sender workers")
 	flag.Parse()
 
 	if *workers > 100 {
-		log.Fatalln(errors.New("No more than 100 workers are allowed"))
+		log.Fatalln(errors.New("no more than 100 workers are allowed"))
 	}
 
 	if *workers < 1 {
-		log.Fatalln(errors.New("No less than 1 worker is allowed"))
+		log.Fatalln(errors.New("no less than 1 worker is allowed"))
 	}
 
 	// Initialize and start sender
@@ -39,7 +39,7 @@ func main() {
 	sendCh := make(chan []byte, 1000)
 	go sender.Start(sendCh, *workers)
 
-	if strings.Index(*local, "://") == -1 {
+	if !strings.Contains(*local, "://") {
 		*local = "udp://" + *local
 	}
 
