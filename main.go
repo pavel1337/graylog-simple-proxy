@@ -16,6 +16,7 @@ func main() {
 	crt := flag.String("crt", "client.crt", "Client certificate path")
 	key := flag.String("key", "client.key", "Client key path")
 	workers := flag.Int("workers", 5, "Sender workers")
+	debug := flag.Bool("debug", false, "Debug mode on")
 	flag.Parse()
 
 	if *workers > 100 {
@@ -35,6 +36,7 @@ func main() {
 		insecure:   *insecure,
 		remoteAddr: *remote,
 		workers:    *workers,
+		debug:      *debug,
 	}
 	sendCh := make(chan []byte, 1000)
 	go sender.Start(sendCh, *workers)

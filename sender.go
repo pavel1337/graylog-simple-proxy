@@ -19,6 +19,7 @@ type Sender struct {
 	insecure   bool
 	remoteAddr string
 	workers    int
+	debug      bool
 
 	hc *http.Client
 }
@@ -58,6 +59,9 @@ func (s *Sender) Start(sendCh chan []byte, workers int) {
 
 func (s *Sender) send(sendCh chan []byte) {
 	for m := range sendCh {
+		if s.debug {
+			log.Printf("new message to send: %s", string(m))
+		}
 		for {
 			reader := bytes.NewReader(m)
 			resp, err := s.hc.Post(s.remoteAddr, "", reader)
