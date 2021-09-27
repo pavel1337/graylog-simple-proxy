@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: graylog-proxy
+  name: graylog-proxy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: graylog-proxy
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: graylog-proxy
+    spec:
+      containers:
+      - image: pv1337/graylog-simple-proxy
+        name: graylog-simple-proxy
+        resources: {}
+        command:
+        - /graylog-proxy
+        - --ca=/tls/ca.crt
+        - --crt=/tls/client.crt
+        - --key=/tls/client.key
+        - -l=0.0.0.0:12201
+        - --r=https://yougraylogurl/gelf
+        - --server-name=yourservercertificatename
+        volumeMounts:
+        - name: tls
+          mountPath: /tls/
+      volumes:
+      - secret:
+          secretName: graylog-proxy-tls
+        name: tls
