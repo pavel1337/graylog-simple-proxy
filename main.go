@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -12,10 +13,12 @@ func main() {
 	remote := flag.String("r", "graylog.example.com", "Remote graylog GELF input")
 	insecure := flag.Bool("insecure", false, "Skip Certificate Verification")
 	serverName := flag.String("server-name", "", "Server Name declared in certificate to verificate")
-	ca := flag.String("ca", "ca.crt", "Certificate Authority path")
-	crt := flag.String("crt", "client.crt", "Client certificate path")
-	key := flag.String("key", "client.key", "Client key path")
+	ca := flag.String("ca", "", "Certificate Authority path")
+	crt := flag.String("crt", "", "Client certificate path (optional)")
+	key := flag.String("key", "", "Client key path (optional)")
 	workers := flag.Int("workers", 5, "Sender workers")
+	backoffCount := flag.Int("backoff-count", 5, "Backoff count")
+	timeout := flag.Duration("timeout", 5*time.Second, "Timeout")
 	debug := flag.Bool("debug", false, "Debug mode on")
 	flag.Parse()
 
@@ -29,14 +32,16 @@ func main() {
 
 	// Initialize and start sender
 	sender := Sender{
-		ca:         *ca,
-		crt:        *crt,
-		key:        *key,
-		serverName: *serverName,
-		insecure:   *insecure,
-		remoteAddr: *remote,
-		workers:    *workers,
-		debug:      *debug,
+		ca:           *ca,
+		crt:          *crt,
+		key:          *key,
+		serverName:   *serverName,
+		insecure:     *insecure,
+		remoteAddr:   *remote,
+		workers:      *workers,
+		backoffCount: *backoffCount,
+		timeout:      *timeout,
+		debug:        *debug,
 	}
 	sendCh := make(chan []byte, 1000)
 	go sender.Start(sendCh, *workers)
